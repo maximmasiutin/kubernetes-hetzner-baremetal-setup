@@ -12,7 +12,7 @@ This guide provides scripts to set up a Kubernetes cluster on Hetzner servers us
 ## Files Overview
 
 1. **init-network.bash** - Configures kernel parameters and modules for Kubernetes
-2. **hetzner-vswich.bash** - Sets up Hetzner vSwitch VLAN interface
+2. **init-hetzner-vswitch.bash** - Sets up Hetzner vSwitch VLAN interface
 3. **install-kube-tools-containerd.bash** - Installs Kubernetes tools with containerd (RECOMMENDED)
 4. **install-kube-tools-cri-o.bash** - Installs Kubernetes tools with CRI-O (alternative)
 5. **init-control-plane.bash** - Initializes the Kubernetes control plane
@@ -40,8 +40,10 @@ sudo ./install-kube-tools-cri-o.bash
 
 #### Step 3: Configure Hetzner vSwitch and set IP address of Your Node
 ```
-# Use the IP you want for this node (e.g., 10.0.0.10)
-sudo ./hetzner-vswich.bash 10.0.0.10
+# Use the IP/subnet you want for this node (e.g., 10.0.0.10/24)
+# This is the node's address in the vSwitch network for inter-node communication,
+# NOT a pod IP (pod IPs are managed by Calico CNI)
+sudo ./init-hetzner-vswitch.bash 10.0.0.10/24
 ```
 
 [According to Hetzner](https://docs.hetzner.com/robot/dedicated-server/network/vswitch/#firewall)
@@ -88,7 +90,7 @@ sudo ./init-network.bash
 sudo ./install-kube-tools-containerd.bash
 
 # Step 3: Configure vSwitch with different IP
-sudo ./hetzner-vswich.bash 10.0.0.11  # Use .11, .12, etc for each worker
+sudo ./init-hetzner-vswitch.bash 10.0.0.11/24  # Use .11, .12, etc for each worker
 ```
 
 #### Step 4: Join the Cluster
@@ -112,11 +114,11 @@ kubectl get pods -A
 ## Network Architecture
 
 - **Public Network**: Each server has its public IP (e.g., 5.9.143.195, 78.46.68.239)
-- **vSwitch (VLAN 4000)**: Private network for Kubernetes (10.0.0.0/24)
+- **vSwitch (VLAN 4000)**: Private network for node-to-node communication (10.0.0.0/24). These are node IPs used for Kubernetes control plane traffic and inter-node communication.
   - Control plane: 10.0.0.10
   - Worker 1: 10.0.0.11
   - Worker 2: 10.0.0.12, etc.
-- **Pod Network**: Calico manages (192.168.0.0/16)
+- **Pod Network**: Calico CNI manages pod IPs (192.168.0.0/16). These are automatically assigned to pods and are separate from node IPs.
 
 ## Important Notes
 

@@ -1,18 +1,34 @@
 #!/bin/bash
 
+# This script configures the Hetzner vSwitch VLAN interface for node-to-node communication.
+# The IP address specified here is the node's address within the private vSwitch network,
+# used for Kubernetes control plane and inter-node traffic (e.g., 10.0.0.10/24).
+# This is NOT a Pod IP - Pod IPs are managed by the Kubernetes CNI (Calico) on a
+# separate network (192.168.0.0/16 by default).
+
 # Check if IP address parameter is provided
 if [ -z "$1" ]; then
-    echo "Error: IP address parameter is required"
-    echo "Usage: $0 <IP_ADDRESS>"
-    echo "Example: $0 10.0.0.10"
+    echo "Error: IP address with subnet parameter is required"
+    echo "Usage: $0 <IP_ADDRESS/SUBNET>"
+    echo "Example: $0 10.0.0.10/24"
     exit 1
 fi
 
-# Validate IP address format (basic IPv4 validation)
-IP_ADDRESS="$1"
-if ! [[ "$IP_ADDRESS" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+# Parse IP address and subnet from parameter
+IP_WITH_SUBNET="$1"
+if ! [[ "$IP_WITH_SUBNET" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$ ]]; then
     echo "Error: Invalid IP address format"
-    echo "Expected format: x.x.x.x (e.g., 10.0.0.10)"
+    echo "Expected format: x.x.x.x/mask (e.g., 10.0.0.10/24)"
+    exit 1
+fi
+
+# Extract IP address and subnet mask
+IP_ADDRESS="${IP_WITH_SUBNET%/*}"
+SUBNET_MASK="${IP_WITH_SUBNET#*/}"
+
+# Validate subnet mask (0-32)
+if [ "$SUBNET_MASK" -gt 32 ] || [ "$SUBNET_MASK" -lt 0 ]; then
+    echo "Error: Subnet mask must be between 0 and 32"
     exit 1
 fi
 
@@ -25,7 +41,7 @@ for octet in "${octets[@]}"; do
     fi
 done
 
-echo "Using IP address: $IP_ADDRESS"
+echo "Using IP address: $IP_ADDRESS with subnet /$SUBNET_MASK"
 
 # Detect the primary physical network interface
 PHYSICAL_IFACE=$(ip route show default | grep -oP 'dev \K\S+' | head -n1)
@@ -63,7 +79,7 @@ network:
       id: 4000
       link: $PHYSICAL_IFACE
       addresses:
-        - $IP_ADDRESS/24
+        - $IP_WITH_SUBNET
       mtu: 1400
 EOT
 

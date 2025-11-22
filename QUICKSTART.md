@@ -6,7 +6,7 @@ You should have downloaded these 9 files:
 
 ### Core Setup Scripts:
 1. `init-network.bash` - Configure kernel for Kubernetes
-2. `hetzner-vswich.bash` - Setup vSwitch interface
+2. `init-hetzner-vswitch.bash` - Setup vSwitch interface
 3. `install-kube-tools-cri-o.bash` - Install Kubernetes + CRI-O
 
 ### Automation Scripts:
@@ -32,8 +32,8 @@ CRIO_VERSION=v1.34
 # Make scripts executable
 chmod +x *.bash
 
-# Run complete setup (replace 10.0.0.10 with your IP)
-sudo ./setup-control-plane-complete.bash 10.0.0.10
+# Run complete setup (replace 10.0.0.10/24 with your IP/subnet)
+sudo ./setup-control-plane-complete.bash 10.0.0.10/24
 ```
 
 This single command does everything!
@@ -44,8 +44,8 @@ This single command does everything!
 # Make scripts executable
 chmod +x *.bash
 
-# Run worker setup (replace 10.0.0.11 with your IP)
-sudo ./setup-worker-complete.bash 10.0.0.11
+# Run worker setup (replace 10.0.0.11/24 with your IP/subnet)
+sudo ./setup-worker-complete.bash 10.0.0.11/24
 ```
 
 ## Manual Step-by-Step (If You Prefer)
@@ -55,7 +55,7 @@ sudo ./setup-worker-complete.bash 10.0.0.11
 chmod +x *.bash
 sudo ./init-network.bash
 sudo ./install-kube-tools-containerd.bash
-sudo ./hetzner-vswich.bash 10.0.0.10
+sudo ./init-hetzner-vswitch.bash 10.0.0.10/24
 sudo ./init-control-plane.bash
 ```
 
@@ -64,7 +64,7 @@ sudo ./init-control-plane.bash
 chmod +x *.bash
 sudo ./init-network.bash
 sudo ./install-kube-tools-containerd.bash
-sudo ./hetzner-vswich.bash 10.0.0.11
+sudo ./init-hetzner-vswitch.bash 10.0.0.11/24
 ```
 
 ## Get Join Command
@@ -138,8 +138,11 @@ See `README.md` for complete documentation and detailed troubleshooting.
 
 ## Network IPs Summary
 
-- Control Plane vSwitch: `10.0.0.10`
-- Worker 1 vSwitch: `10.0.0.11`
-- Worker 2 vSwitch: `10.0.0.12`
-- Pod Network: `192.168.0.0/16` (managed by Calico)
-- Service Network: `10.96.0.0/12` (Kubernetes default)
+**Node IPs (vSwitch)** - for inter-node communication, set manually via `init-hetzner-vswitch.bash`:
+- Control Plane: `10.0.0.10`
+- Worker 1: `10.0.0.11`
+- Worker 2: `10.0.0.12`
+
+**Pod IPs** - managed automatically by Calico CNI (not configured manually):
+- Pod Network: `192.168.0.0/16`
+- Service Network: `10.96.0.0/12`

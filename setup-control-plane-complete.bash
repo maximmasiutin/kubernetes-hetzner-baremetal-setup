@@ -13,9 +13,9 @@ fi
 
 # Check if IP address parameter is provided
 if [ -z "$1" ]; then
-    echo "Error: IP address parameter is required"
-    echo "Usage: sudo $0 <VSWITCH_IP>"
-    echo "Example: sudo $0 10.0.0.10"
+    echo "Error: IP address with subnet parameter is required"
+    echo "Usage: sudo $0 <VSWITCH_IP/SUBNET>"
+    echo "Example: sudo $0 10.0.0.10/24"
     exit 1
 fi
 
@@ -49,7 +49,7 @@ bash install-kube-tools-cri-o.bash
 
 echo ""
 echo "Step 3/5: Setting up vSwitch..."
-bash hetzner-vswich.bash $VSWITCH_IP
+bash init-hetzner-vswitch.bash $VSWITCH_IP
 
 echo ""
 echo "Step 4/5: Initializing control plane..."
