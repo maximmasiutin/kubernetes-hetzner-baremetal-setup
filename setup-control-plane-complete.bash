@@ -14,17 +14,24 @@ fi
 # Check if IP address parameter is provided
 if [ -z "$1" ]; then
     echo "Error: IP address with subnet parameter is required"
-    echo "Usage: sudo $0 <VSWITCH_IP/SUBNET>"
+    echo "Usage: sudo $0 <VSWITCH_IP/SUBNET> [HOSTNAME]"
     echo "Example: sudo $0 10.0.0.10/24"
+    echo "Example: sudo $0 10.0.0.10/24 k8s-master.example.com"
     exit 1
 fi
 
 VSWITCH_IP="$1"
+HOSTNAME_PARAM="$2"  # Optional hostname for certificate SANs
 
 echo "=========================================="
 echo "Kubernetes Control Plane Setup"
 echo "=========================================="
 echo "vSwitch IP: $VSWITCH_IP"
+if [ -n "$HOSTNAME_PARAM" ]; then
+    echo "Hostname: $HOSTNAME_PARAM"
+else
+    echo "Hostname: $(hostname) (default)"
+fi
 echo ""
 echo "This script will:"
 echo "1. Configure network settings"
@@ -53,7 +60,7 @@ bash init-hetzner-vswitch.bash $VSWITCH_IP
 
 echo ""
 echo "Step 4/5: Initializing control plane..."
-bash init-control-plane.bash
+bash init-control-plane.bash $HOSTNAME_PARAM
 
 echo ""
 echo "=========================================="

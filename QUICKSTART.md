@@ -20,12 +20,6 @@ You should have downloaded these 9 files:
 
 ## Fastest Way to Setup
 
-Replace version numbers to the versions you need in the `install-kube-tools-cri-o.bash` file, by editing these lines:
-```
-KUBERNETES_VERSION=v1.34
-CRIO_VERSION=v1.34
-```
-
 ### Control Plane Node (One Command):
 
 ```
@@ -34,6 +28,9 @@ chmod +x *.bash
 
 # Run complete setup (replace 10.0.0.10/24 with your IP/subnet)
 sudo ./setup-control-plane-complete.bash 10.0.0.10/24
+
+# Or with custom hostname for certificate SANs:
+sudo ./setup-control-plane-complete.bash 10.0.0.10/24 k8s-master.example.com
 ```
 
 This single command does everything!
@@ -56,7 +53,8 @@ chmod +x *.bash
 sudo ./init-network.bash
 sudo ./install-kube-tools-containerd.bash
 sudo ./init-hetzner-vswitch.bash 10.0.0.10/24
-sudo ./init-control-plane.bash
+sudo ./init-control-plane.bash                          # uses system hostname
+# or: sudo ./init-control-plane.bash k8s-master.example.com  # custom hostname
 ```
 
 ### Worker:
@@ -67,14 +65,35 @@ sudo ./install-kube-tools-containerd.bash
 sudo ./init-hetzner-vswitch.bash 10.0.0.11/24
 ```
 
-## Get Join Command
+## Join Worker to Cluster
 
-On control plane:
+On control plane, get credentials:
 ```
 kubeadm token create --print-join-command
 ```
 
-Copy the entire output and use it on worker nodes.
+On worker, use the join script:
+```
+sudo ./join-worker-node.bash <CONTROL_PLANE_IP> <TOKEN> <CA_HASH> [HOSTNAME]
+
+# Example:
+sudo ./join-worker-node.bash 10.0.0.10 abcdef.token sha256:hash worker-1
+```
+
+The script validates both IPs are in the same vSwitch subnet before joining.
+
+## Add Additional Control Planes (HA)
+
+On existing control plane:
+```
+kubeadm token create --print-join-command
+kubeadm init phase upload-certs --upload-certs
+```
+
+On new control plane (after running Steps 1-3):
+```
+sudo ./join-additional-control-plane.bash <CP_IP> <TOKEN> <HASH> <CERT_KEY> [HOSTNAME]
+```
 
 ## Verify Cluster
 
@@ -84,6 +103,30 @@ kubectl get pods -A
 ```
 
 All nodes should show "Ready" and all pods "Running".
+
+## Install Metrics Server (kubectl top)
+
+```
+sudo perl install-metrics-server.pl
+```
+
+Then use: `kubectl top nodes` and `kubectl top pods`
+
+## Install Node Problem Detector
+
+```
+sudo perl install-node-problem-detector.pl
+```
+
+Monitors for kernel deadlocks, filesystem issues, runtime problems.
+
+## Backup etcd
+
+```
+sudo ./etcd-backup-restore.bash backup
+```
+
+Restore: `sudo ./etcd-backup-restore.bash restore /var/backups/etcd/backup.db`
 
 ## Important Prerequisites
 
