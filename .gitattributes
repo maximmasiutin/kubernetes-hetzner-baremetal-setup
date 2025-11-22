@@ -1,3 +1,4 @@
 *.bash text eol=lf
+*.pl text eol=lf
 LICENSE text eol=lf
 README.md text eol=lf
